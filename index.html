@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Gatito</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gatito">
+<meta name="theme-color" content="#0a0000">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0000;--text:#fdf0e8;--muted:rgba(253,240,232,.45);
+  --c-frase:#e63946;--c-recuerdo:#c0392b;--c-razon:#8b1a1a;--c-motivacion:#ff5252;
+}
+html,body{
+  height:100%;height:100dvh;background:var(--bg);color:var(--text);
+  font-family:'Lato',sans-serif;font-weight:300;
+  overflow:hidden;-webkit-tap-highlight-color:transparent;
+}
+#bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+#yt-player{position:fixed;width:0;height:0;overflow:hidden}
+.screen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:1.2rem;z-index:1;
+  opacity:0;transition:opacity .7s ease;pointer-events:none;
+}
+.screen.active{opacity:1;pointer-events:all}
+.pin-box{
+  width:92%;max-width:440px;display:flex;flex-direction:column;
+  align-items:center;gap:1.6rem;padding:3rem 2rem;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;backdrop-filter:blur(8px);
+}
+.heart{font-size:4rem;line-height:1;filter:drop-shadow(0 0 14px #e63946);animation:beat 1.6s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.2)}30%{transform:scale(1)}45%{transform:scale(1.12)}60%{transform:scale(1)}}
+.welcome{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1.2rem,5.5vw,1.6rem);text-align:center;line-height:1.6;max-width:100%}
+.pin-hint{font-size:.85rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.dots{display:flex;gap:1.1rem}
+.dot{width:15px;height:15px;border-radius:50%;border:1.5px solid rgba(253,240,232,.3);transition:all .2s}
+.dot.on{background:var(--c-frase);border-color:var(--c-frase);box-shadow:0 0 10px var(--c-frase)}
+.keypad{display:grid;grid-template-columns:repeat(3,90px);gap:.85rem}
+.key{
+  width:90px;height:90px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);
+  color:var(--text);font-family:'Lato',sans-serif;font-size:1.5rem;font-weight:300;
+  cursor:pointer;transition:all .15s;touch-action:manipulation;
+  display:flex;align-items:center;justify-content:center;
+}
+.key:active,.key:focus{background:rgba(230,57,70,.22);border-color:var(--c-frase);outline:none}
+.key-del{font-size:1rem;color:var(--muted)}
+.err{font-size:.85rem;color:var(--c-frase);min-height:1.2em;opacity:0;transition:opacity .3s}
+.err.show{opacity:1}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.shaking{animation:shake .45s ease}
+#show-screen{justify-content:space-between;padding:4.5rem 1.5rem 2.5rem}
+.top-bar{position:absolute;top:1.2rem;right:1.2rem}
+.icon-btn{
+  width:52px;height:52px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
+  color:var(--muted);font-size:1.2rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.icon-btn.on{color:var(--text);border-color:var(--text)}
+.card-wrap{width:100%;max-width:100%;flex:1;display:flex;align-items:center;justify-content:center;padding:.5rem 0}
+.card{
+  width:100%;padding:2.5rem 2rem;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;backdrop-filter:blur(8px);
+  transition:box-shadow .6s ease,opacity .4s ease,transform .4s ease;
+  display:flex;flex-direction:column;gap:1.2rem;min-height:52vh;
+}
+.cat-row{display:flex;align-items:center;gap:.5rem}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:all .4s}
+.cat-label{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:400;transition:all .4s;padding:.3rem .75rem;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid currentColor}
+.msg{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1.6rem,6vw,2.4rem);line-height:1.7;flex:1;display:flex;align-items:center}
+.controls{display:flex;align-items:center;gap:2.2rem;padding-bottom:1.5rem}
+.ctrl-btn{width:82px;height:82px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--text);font-size:1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ctrl-btn:hover{background:rgba(230,57,70,.18);border-color:var(--c-frase)}
+#auto-btn{width:92px;height:92px;font-size:1.6rem;border-color:var(--c-frase);background:rgba(230,57,70,.12)}
+#auto-btn.playing{background:var(--c-frase);box-shadow:0 0 24px rgba(230,57,70,.5)}
+@media (min-width:700px),(orientation:landscape){
+  #pin-screen{padding:2rem}
+  .pin-box{width:auto;max-width:360px;gap:1.2rem;padding:2rem 1.8rem;background:transparent;border:none;border-radius:0;backdrop-filter:none}
+  .heart{font-size:3rem}.welcome{font-size:clamp(1rem,2.5vw,1.3rem);max-width:320px}
+  .pin-hint{font-size:.7rem}.dot{width:12px;height:12px}.dots{gap:.85rem}
+  .keypad{grid-template-columns:repeat(3,72px);gap:.65rem}.key{width:72px;height:72px;font-size:1.25rem}
+  #show-screen{padding:4.5rem 2rem 2.5rem}
+  .card-wrap{max-width:560px}.card{min-height:200px;padding:2rem 1.8rem}
+  .msg{font-size:clamp(1.2rem,2.5vw,1.6rem)}.cat-label{font-size:.72rem;padding:.25rem .65rem}
+  .ctrl-btn{width:50px;height:50px;font-size:1.05rem}
+  #auto-btn{width:58px;height:58px;font-size:1.15rem}
+  .controls{gap:1.2rem;padding-bottom:.5rem}.icon-btn{width:40px;height:40px;font-size:1rem}
+}
+@media (orientation:landscape) and (max-height:500px){
+  #pin-screen{padding:1rem}.pin-box{gap:.8rem;padding:1.2rem}
+  .heart{font-size:2rem}.welcome{font-size:.9rem}
+  .keypad{grid-template-columns:repeat(3,55px);gap:.45rem}.key{width:55px;height:55px;font-size:1rem}
+  #show-screen{padding:3.5rem 2rem 1.5rem}.card{padding:1.2rem 1.5rem;min-height:unset}
+  .msg{font-size:1rem}.ctrl-btn{width:42px;height:42px;font-size:.95rem}
+  #auto-btn{width:48px;height:48px}.controls{gap:1.2rem;padding-bottom:.5rem}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="yt-player"></div>
+
+<section id="pin-screen" class="screen active">
+  <div class="pin-box">
+    <div class="heart">♥</div>
+    <p class="welcome">Esto es un poco de todo lo que haz hecho por mí</p>
+    <p class="pin-hint">Ingresa tu pin</p>
+    <div class="dots">
+      <div class="dot" id="d0"></div><div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div><div class="dot" id="d3"></div>
+      <div class="dot" id="d4"></div><div class="dot" id="d5"></div>
+    </div>
+    <div class="keypad">
+      <button class="key" onclick="kp('1')">1</button>
+      <button class="key" onclick="kp('2')">2</button>
+      <button class="key" onclick="kp('3')">3</button>
+      <button class="key" onclick="kp('4')">4</button>
+      <button class="key" onclick="kp('5')">5</button>
+      <button class="key" onclick="kp('6')">6</button>
+      <button class="key" onclick="kp('7')">7</button>
+      <button class="key" onclick="kp('8')">8</button>
+      <button class="key" onclick="kp('9')">9</button>
+      <button class="key key-del" onclick="kpDel()">⌫</button>
+      <button class="key" onclick="kp('0')">0</button>
+      <button class="key key-del" onclick="kpClr()">✕</button>
+    </div>
+    <p class="err" id="err">Pin incorrecto, inténtalo de nuevo</p>
+  </div>
+</section>
+
+<section id="show-screen" class="screen">
+  <div class="top-bar">
+    <button class="icon-btn" id="music-btn" onclick="toggleMusic()" title="Música">♪</button>
+  </div>
+  <div class="card-wrap">
+    <div class="card" id="card">
+      <div class="cat-row">
+        <span class="cat-dot" id="cat-dot"></span>
+        <span class="cat-label" id="cat-label"></span>
+      </div>
+      <p class="msg" id="msg"></p>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="go(-1)">&#8592;</button>
+    <button class="ctrl-btn playing" id="auto-btn" onclick="toggleAuto()">&#9646;&#9646;</button>
+    <button class="ctrl-btn" onclick="go(1)">&#8594;</button>
+  </div>
+</section>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────
+const API = 'https://script.google.com/macros/s/AKfycbwbfw3AfL5sDsMJKOXh-oWZXHxq0om5bX844s2PIlFt_poXv_EObQcEkT98nVKhtMBg/exec';
+
+// ── SERVICE WORKER ────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/gatito/sw.js');
+}
+
+// ── JSONP (llamadas al API) ───────────────────────────────
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const id = '_cb' + Date.now();
+    const s  = document.createElement('script');
+    s.src    = url + '&callback=' + id;
+    window[id] = d => { delete window[id]; s.remove(); resolve(d); };
+    s.onerror  = () => { delete window[id]; s.remove(); reject(); };
+    document.head.appendChild(s);
+  });
+}
+
+// ── PARTICLES ────────────────────────────────────────────
+const cv=document.getElementById('bg-canvas'),cx=cv.getContext('2d');
+let W,H;
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+resize();addEventListener('resize',resize);
+const pts=Array.from({length:55},()=>({
+  x:Math.random()*innerWidth,y:Math.random()*innerHeight,
+  r:Math.random()*8+3,a:Math.random()*.18+.05,
+  vx:(Math.random()-.5)*.25,vy:-Math.random()*.35-.08
+}));
+(function loop(){
+  cx.clearRect(0,0,W,H);
+  pts.forEach(p=>{
+    cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    cx.fillStyle=`rgba(230,57,70,${p.a})`;cx.fill();
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.y<-p.r){p.y=H+p.r;p.x=Math.random()*W}
+    if(p.x<-p.r)p.x=W+p.r;if(p.x>W+p.r)p.x=-p.r;
+  });
+  requestAnimationFrame(loop);
+})();
+
+// ── PIN ──────────────────────────────────────────────────
+const PIN_LEN=6;let pin='';
+function kp(d){if(pin.length>=PIN_LEN)return;pin+=d;renderDots();if(pin.length===PIN_LEN)setTimeout(checkPin,180)}
+function kpDel(){pin=pin.slice(0,-1);renderDots()}
+function kpClr(){pin='';renderDots()}
+function renderDots(){for(let i=0;i<PIN_LEN;i++)document.getElementById('d'+i).classList.toggle('on',i<pin.length)}
+
+function checkPin(){
+  jsonp(`${API}?action=pin&valor=${pin}`)
+    .then(res=>{
+      if(res.valid){loadSlideshow()}
+      else{
+        document.getElementById('err').classList.add('show');
+        const ps=document.getElementById('pin-screen');
+        ps.classList.add('shaking');
+        setTimeout(()=>{ps.classList.remove('shaking');document.getElementById('err').classList.remove('show');kpClr()},1400);
+      }
+    })
+    .catch(()=>kpClr());
+}
+
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('pin-screen').classList.contains('active'))return;
+  if(/^[0-9]$/.test(e.key))kp(e.key);
+  else if(e.key==='Backspace')kpDel();
+  else if(e.key==='Escape')kpClr();
+});
+
+// ── SLIDESHOW ────────────────────────────────────────────
+let msgs=[],cur=0,autoTmr=null,isAuto=true;
+const CAT={
+  frase:     {color:'#e63946',label:'Frase'},
+  recuerdo:  {color:'#c0392b',label:'Recuerdo'},
+  razon:     {color:'#8b1a1a',label:'Razón'},
+  motivacion:{color:'#ff5252',label:'Motivación'}
+};
+
+function loadSlideshow(){
+  const ps=document.getElementById('pin-screen'),ss=document.getElementById('show-screen');
+  let fadeOk=false,dataOk=false;
+  ps.classList.remove('active');
+  setTimeout(()=>{fadeOk=true;tryEnter()},700);
+
+  jsonp(`${API}?action=mensajes`)
+    .then(data=>{msgs=data;cur=0;dataOk=true;tryEnter()})
+    .catch(()=>{});
+
+  function tryEnter(){if(fadeOk&&dataOk){ss.classList.add('active');show(0,'in');startAuto()}}
+}
+
+function show(idx,dir){
+  const card=document.getElementById('card');
+  card.style.transition='opacity .3s ease,transform .3s ease';
+  card.style.opacity='0';
+  card.style.transform=dir==='next'?'translateX(-16px)':dir==='prev'?'translateX(16px)':'translateY(5px)';
+  setTimeout(()=>{
+    const m=msgs[idx];if(!m)return;
+    const cat=CAT[m.categoria]||{color:'#e63946',label:m.categoria};
+    document.getElementById('msg').textContent      =m.mensaje;
+    document.getElementById('cat-dot').style.cssText=`background:${cat.color};box-shadow:0 0 7px ${cat.color}`;
+    document.getElementById('cat-label').textContent=cat.label;
+    document.getElementById('cat-label').style.color=cat.color;
+    card.style.boxShadow=`0 0 50px ${cat.color}1a,0 4px 30px rgba(0,0,0,.45)`;
+    card.style.transition='opacity .45s ease,transform .45s ease';
+    card.style.opacity='1';card.style.transform='none';
+  },320);
+}
+
+function go(dir){
+  cur=(cur+dir+msgs.length)%msgs.length;
+  show(cur,dir>0?'next':'prev');
+  if(isAuto)resetAuto();
+}
+function toggleAuto(){
+  isAuto=!isAuto;
+  const btn=document.getElementById('auto-btn');
+  btn.innerHTML=isAuto?'&#9646;&#9646;':'&#9654;';
+  btn.classList.toggle('playing',isAuto);
+  isAuto?startAuto():clearInterval(autoTmr);
+}
+function startAuto(){autoTmr=setInterval(()=>go(1),9000)}
+function resetAuto(){clearInterval(autoTmr);startAuto()}
+
+let tx=0;
+document.addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!document.getElementById('show-screen').classList.contains('active'))return;
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50)go(dx<0?1:-1);
+},{passive:true});
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('show-screen').classList.contains('active'))return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(1)}
+  if(e.key==='ArrowLeft'){e.preventDefault();go(-1)}
+});
+
+// ── YOUTUBE ──────────────────────────────────────────────
+let ytPlayer=null,musicOn=false,ytReady=false;
+function onYouTubeIframeAPIReady(){
+  ytPlayer=new YT.Player('yt-player',{
+    videoId:'Uc0RmO6oVkE',
+    playerVars:{autoplay:0,loop:1,playlist:'Uc0RmO6oVkE',controls:0},
+    events:{onReady:()=>{ytReady=true}}
+  });
+}
+function toggleMusic(){
+  if(!ytReady)return;
+  musicOn=!musicOn;
+  document.getElementById('music-btn').classList.toggle('on',musicOn);
+  musicOn?ytPlayer.playVideo():ytPlayer.pauseVideo();
+}
+</script>
+</body>
+</html>
