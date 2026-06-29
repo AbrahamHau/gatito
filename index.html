@@ -313,6 +313,21 @@ function toggleMusic(){
   document.getElementById('music-btn').classList.toggle('on',musicOn);
   musicOn?ytPlayer.playVideo():ytPlayer.pauseVideo();
 }
+// ── WAKE LOCK (pantalla siempre encendida) ────────────────
+let wakeLock = null;
+
+async function activarWakeLock() {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (e) {}
+}
+
+// Activa cuando entra al slideshow
+document.addEventListener('visibilitychange', () => {
+  if (wakeLock && document.visibilityState === 'visible') {
+    activarWakeLock();
+  }
+});
 </script>
 </body>
 </html>
