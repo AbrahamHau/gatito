@@ -249,7 +249,7 @@ function loadSlideshow(){
     .then(data=>{msgs=data;cur=0;dataOk=true;tryEnter()})
     .catch(()=>{});
 
-  function tryEnter(){if(fadeOk&&dataOk){ss.classList.add('active');show(0,'in');startAuto()}}
+  function tryEnter(){if(fadeOk&&dataOk){ss.classList.add('active');show(0,'in');startAuto();activarWakeLock()}}
 }
 
 function show(idx,dir){
